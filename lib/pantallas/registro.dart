@@ -27,13 +27,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
     );
 
     if (response.statusCode == 200) {
-      // Registro exitoso
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registro exitoso')),
       );
       Navigator.pop(context);
     } else {
-      // Error en el registro
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al registrar usuario')),
       );
@@ -43,31 +41,59 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registro de Usuario')),
+      backgroundColor: Colors.teal[50],
+      appBar: AppBar(
+        title: const Text('Registro de Usuario'),
+        backgroundColor: Colors.teal,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _usuarioController,
-              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
-            ),
-            TextField(
-              controller: _correoController,
-              decoration: const InputDecoration(labelText: 'Correo electrónico'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            TextField(
-              controller: _contrasenaController,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _registroUsuario,
-              child: const Text('Registrar'),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              TextField(
+                controller: _usuarioController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de usuario',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _correoController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo electrónico',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _contrasenaController,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  minimumSize: const Size(200, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _registroUsuario,
+                child: const Text('Registrar'),
+              ),
+            ],
+          ),
         ),
       ),
     );

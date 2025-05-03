@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'restaurantes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,18 +26,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (response.statusCode == 200) {
-      // Inicio de sesión exitoso
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inicio de sesión exitoso')),
       );
-      // Aquí podrías navegar a otra pantalla o hacer algo más
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const RestaurantesScreen()),
+      );
     } else if (response.statusCode == 401) {
-      // Error en la autenticación
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Usuario o contraseña incorrectos')),
       );
     } else {
-      // Otro error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error desconocido, intente de nuevo')),
       );
@@ -46,27 +47,50 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar sesión')),
+      backgroundColor: Colors.teal[50], // Fondo suave
+      appBar: AppBar(
+        title: const Text('Iniciar sesión'),
+        backgroundColor: Colors.teal,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _correoController,
-              decoration: const InputDecoration(labelText: 'Correo electrónico'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            TextField(
-              controller: _contrasenaController,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _iniciarSesion,
-              child: const Text('Iniciar sesión'),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              TextField(
+                controller: _correoController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo electrónico',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _contrasenaController,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  minimumSize: const Size(200, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _iniciarSesion,
+                child: const Text('Iniciar sesión'),
+              ),
+            ],
+          ),
         ),
       ),
     );
