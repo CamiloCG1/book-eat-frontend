@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:book_eat_frontend/pantallas/restaurante_detalle.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -32,18 +33,6 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
         const SnackBar(content: Text('No se pudo cargar los restaurantes')),
       );
     }
-  }
-
-  void _mostrarEnProgreso() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: Text('En progreso')),
-          body: Center(child: Text('Esta funcionalidad está en progreso')),
-        ),
-      ),
-    );
   }
 
   @override
@@ -99,7 +88,14 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: _mostrarEnProgreso,
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RestauranteDetalleScreen(restaurante: restaurante),
+                          ),
+                        );
+                      },
                       child: const Text('Detalles'),
                     ),
                   ),

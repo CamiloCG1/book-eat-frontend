@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'restaurantes.dart';
+import 'session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +27,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      Session.usuarioId = data['id'];
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inicio de sesión exitoso')),
       );
@@ -47,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal[50], // Fondo suave
+      backgroundColor: Colors.teal[50],
       appBar: AppBar(
         title: const Text('Iniciar sesión'),
         backgroundColor: Colors.teal,
