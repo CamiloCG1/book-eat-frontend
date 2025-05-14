@@ -4,6 +4,10 @@ import 'dart:convert';
 import 'restaurantes.dart';
 import 'session.dart';
 
+class MemoriaCorreos {
+  static List<String> correos = [];
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,6 +18,18 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // No hay carga porque está en memoria y se mantiene viva mientras la app esté abierta
+  }
+
+  Future<void> _guardarCorreoEnMemoria(String correo) async {
+    if (!MemoriaCorreos.correos.contains(correo)) {
+      MemoriaCorreos.correos.add(correo);
+    }
+  }
 
   Future<void> _iniciarSesion() async {
     final url = Uri.parse('http://localhost:8862/usuarios/autenticacion');
@@ -29,6 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       Session.usuarioId = data['id'];
+
+      await _guardarCorreoEnMemoria(_correoController.text);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inicio de sesión exitoso')),
@@ -62,15 +80,39 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-              TextField(
-                controller: _correoController,
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
+
+              Autocomplete<String>(
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text == '') {
+                    return const Iterable<String>.empty();
+                  }
+                  return MemoriaCorreos.correos.where((String option) {
+                    return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                  });
+                },
+                onSelected: (String selection) {
+                  _correoController.text = selection;
+                },
+                fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                  controller.text = _correoController.text;
+                  controller.selection = _correoController.selection;
+                  controller.addListener(() {
+                    _correoController.text = controller.text;
+                    _correoController.selection = controller.selection;
+                  });
+                  return TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  );
+                },
               ),
+
               const SizedBox(height: 20),
               TextField(
                 controller: _contrasenaController,
