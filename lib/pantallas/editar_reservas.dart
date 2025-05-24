@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class EditarReservaScreen extends StatefulWidget {
   final Map<String, dynamic> reserva;
@@ -17,6 +18,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
   int? mesaSeleccionada;
   List<dynamic> mesas = [];
   bool cargandoMesas = true;
+  String? errorMensaje;
 
   @override
   void initState() {
@@ -46,6 +48,57 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al cargar las mesas')),
       );
+    }
+  }
+
+  Future<TimeOfDay?> _seleccionarHora(BuildContext context, int restauranteId, DateTime fecha) async {
+    final String fechaFormato = '${fecha.year.toString().padLeft(4, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}';
+    final url = Uri.parse('http://localhost:8862/reservas/disponibilidad?restauranteId=$restauranteId&fecha=$fechaFormato');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+
+        if (data.isEmpty) {
+          await showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Sin disponibilidad'),
+              content: const Text('No hay horarios disponibles para la fecha seleccionada.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+              ],
+            ),
+          );
+          return null;
+        }
+
+        return await showDialog<TimeOfDay>(
+          context: context,
+          builder: (context) {
+            return SimpleDialog(
+              title: const Text('Selecciona una hora'),
+              children: data.map<Widget>((horaStr) {
+                final partes = horaStr.split(':');
+                final hour = int.parse(partes[0]);
+                final minute = int.parse(partes[1]);
+                return SimpleDialogOption(
+                  child: Text(horaStr),
+                  onPressed: () => Navigator.pop(context, TimeOfDay(hour: hour, minute: minute)),
+                );
+              }).toList(),
+            );
+          },
+        );
+      } else {
+        throw Exception('Error al obtener disponibilidad');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al cargar horarios disponibles')),
+      );
+      return null;
     }
   }
 
@@ -86,6 +139,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final formatoFecha = DateFormat('yyyy-MM-dd HH:mm');
     return Scaffold(
       appBar: AppBar(title: const Text('Editar Reserva')),
       body: cargandoMesas
@@ -96,7 +150,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                 children: [
                   ListTile(
                     title: const Text('Fecha y Hora'),
-                    subtitle: Text('${fechaHora.toLocal()}'),
+                    subtitle: Text(formatoFecha.format(fechaHora)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
                       final now = DateTime.now();
@@ -109,7 +163,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                         lastDate: DateTime(2100),
                       );
                       if (fecha != null) {
-                        final hora = await _seleccionarHora(context);
+                        final hora = await _seleccionarHora(context, widget.reserva['restauranteId'], fecha);
                         if (hora != null) {
                           setState(() {
                             fechaHora = DateTime(
@@ -124,6 +178,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                       }
                     },
                   ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     initialValue: numeroPersonas.toString(),
                     keyboardType: TextInputType.number,
@@ -132,6 +187,7 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
                       numeroPersonas = int.tryParse(value) ?? 1;
                     },
                   ),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
                     value: mesaSeleccionada,
                     decoration: const InputDecoration(labelText: 'Mesa'),
@@ -157,24 +213,4 @@ class _EditarReservaScreenState extends State<EditarReservaScreen> {
             ),
     );
   }
-}
-
-Future<TimeOfDay?> _seleccionarHora(BuildContext context) async {
-  return await showDialog<TimeOfDay>(
-    context: context,
-    builder: (context) {
-      return SimpleDialog(
-        title: const Text('Selecciona una hora'),
-        children: List.generate(12, (index) {
-          final hour = 12 + index; // De 12:00 a 23:00
-          return SimpleDialogOption(
-            child: Text('${hour.toString().padLeft(2, '0')}:00'),
-            onPressed: () {
-              Navigator.pop(context, TimeOfDay(hour: hour, minute: 0));
-            },
-          );
-        }),
-      );
-    },
-  );
 }
