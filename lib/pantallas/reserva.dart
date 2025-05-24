@@ -121,7 +121,7 @@ class _ReservaScreenState extends State<ReservaScreen> {
                   lastDate: DateTime.now().add(const Duration(days: 30)),
                 );
                 if (fecha != null) {
-                  final hora = await _seleccionarHora(context);
+                  final hora = await _seleccionarHora(context, widget.restauranteId, fecha);
                   if (hora != null) {
                     setState(() {
                       _fechaHora = DateTime(
@@ -129,7 +129,7 @@ class _ReservaScreenState extends State<ReservaScreen> {
                         fecha.month,
                         fecha.day,
                         hora.hour,
-                        0, // minutos fijos a 0
+                        hora.minute,
                       );
                     });
                     _cargarMesasDisponibles();
@@ -183,24 +183,55 @@ class _ReservaScreenState extends State<ReservaScreen> {
       ),
     );
   }
-}
 
-Future<TimeOfDay?> _seleccionarHora(BuildContext context) async {
-  return await showDialog<TimeOfDay>(
-    context: context,
-    builder: (context) {
-      return SimpleDialog(
-        title: const Text('Selecciona una hora'),
-        children: List.generate(12, (index) {
-          final hour = 12 + index; // Ej: 12 a 23
-          return SimpleDialogOption(
-            child: Text('${hour.toString().padLeft(2, '0')}:00'),
-            onPressed: () {
-              Navigator.pop(context, TimeOfDay(hour: hour, minute: 0));
-            },
+  Future<TimeOfDay?> _seleccionarHora(BuildContext context, int restauranteId, DateTime fecha) async {
+    final String fechaFormato = '${fecha.year.toString().padLeft(4, '0')}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}';
+    final url = Uri.parse('http://localhost:8862/reservas/disponibilidad?restauranteId=$restauranteId&fecha=$fechaFormato');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+
+        if (data.isEmpty) {
+          await showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Sin disponibilidad'),
+              content: const Text('No hay horarios disponibles para la fecha seleccionada.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+              ],
+            ),
           );
-        }),
+          return null;
+        }
+
+        return await showDialog<TimeOfDay>(
+          context: context,
+          builder: (context) {
+            return SimpleDialog(
+              title: const Text('Selecciona una hora'),
+              children: data.map<Widget>((horaStr) {
+                final partes = horaStr.split(':');
+                final hour = int.parse(partes[0]);
+                final minute = int.parse(partes[1]);
+                return SimpleDialogOption(
+                  child: Text(horaStr),
+                  onPressed: () => Navigator.pop(context, TimeOfDay(hour: hour, minute: minute)),
+                );
+              }).toList(),
+            );
+          },
+        );
+      } else {
+        throw Exception('Error al obtener disponibilidad');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al cargar horarios disponibles')),
       );
-    },
-  );
+      return null;
+    }
+  }
 }

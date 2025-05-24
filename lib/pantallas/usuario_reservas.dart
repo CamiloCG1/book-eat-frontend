@@ -35,7 +35,9 @@ class _UsuarioReservasScreenState extends State<UsuarioReservasScreen> {
             .where((r) =>
                 r['restauranteId'] == widget.restauranteId &&
                 DateTime.parse(r['fechaHora']).isAfter(ahora))
-            .toList();
+            .toList()
+          ..sort((a, b) =>
+              DateTime.parse(a['fechaHora']).compareTo(DateTime.parse(b['fechaHora'])));
         cargando = false;
       });
     } else {
