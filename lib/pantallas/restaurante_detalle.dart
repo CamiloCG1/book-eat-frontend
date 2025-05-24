@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:book_eat_frontend/pantallas/resenas.dart';
+import 'package:book_eat_frontend/pantallas/usuario_reservas.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'reserva.dart';
+import 'session.dart';
 
 class RestauranteDetalleScreen extends StatefulWidget {
   final Map<String, dynamic> restaurante;
@@ -75,6 +77,7 @@ class _RestauranteDetalleScreenState extends State<RestauranteDetalleScreen> {
   @override
   Widget build(BuildContext context) {
     final restaurante = widget.restaurante;
+    final userId = Session.usuarioId;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,6 +99,9 @@ class _RestauranteDetalleScreenState extends State<RestauranteDetalleScreen> {
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.broken_image, size: 100, color: Colors.grey);
+                        },
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -122,6 +128,22 @@ class _RestauranteDetalleScreenState extends State<RestauranteDetalleScreen> {
                       );
                     },
                     child: const Text('Reservar Mesa'),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UsuarioReservasScreen(
+                            restauranteId: widget.restaurante['id'],
+                            usuarioId: Session.usuarioId!,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    child: const Text('Mis Reservas'),
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
