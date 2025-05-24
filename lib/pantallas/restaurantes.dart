@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:book_eat_frontend/pantallas/restaurante_detalle.dart';
+import 'session.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,12 +12,18 @@ class RestaurantesScreen extends StatefulWidget {
 }
 
 class _RestaurantesScreenState extends State<RestaurantesScreen> {
-  late List<dynamic> restaurantes = [];
+  List<dynamic> restaurantes = [];
+  Set<int> favoritos = {};
 
   @override
   void initState() {
     super.initState();
-    _cargarRestaurantes();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    await _cargarRestaurantes();
+    await _cargarFavoritos();
   }
 
   Future<void> _cargarRestaurantes() async {
@@ -24,13 +31,56 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      // Aquí aseguramos que se usa UTF-8
       setState(() {
-        restaurantes = json.decode(utf8.decode(response.bodyBytes)); // Decodificación en UTF-8
+        restaurantes = json.decode(utf8.decode(response.bodyBytes));
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo cargar los restaurantes')),
+      );
+    }
+  }
+
+  Future<void> _cargarFavoritos() async {
+    final userId = Session.usuarioId;
+    final url = Uri.parse('http://localhost:8862/restaurantes/favoritos/usuario/$userId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(utf8.decode(response.bodyBytes)) as List;
+      setState(() {
+        favoritos = data.map((f) => f['restauranteId'] as int).toSet();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudieron cargar los favoritos')),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorito(int restauranteId) async {
+    final userId = Session.usuarioId;
+    final url = Uri.parse('http://localhost:8862/restaurantes/favoritos');
+    final esFavorito = favoritos.contains(restauranteId);
+
+    final response = esFavorito
+        ? await http.delete(Uri.parse('$url?usuarioId=$userId&restauranteId=$restauranteId'))
+        : await http.post(url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'usuarioId': userId, 'restauranteId': restauranteId}),
+          );
+
+    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+      setState(() {
+        if (esFavorito) {
+          favoritos.remove(restauranteId);
+        } else {
+          favoritos.add(restauranteId);
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al actualizar favoritos')),
       );
     }
   }
@@ -40,22 +90,32 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Restaurantes'),
-        backgroundColor: Colors.green, // Para darle un color más agradable
+        backgroundColor: Colors.green,
       ),
       body: restaurantes.isEmpty
-          ? const Center(child: CircularProgressIndicator()) // Indicador de carga mientras se obtienen los datos
+          ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: restaurantes.length,
               itemBuilder: (context, index) {
                 final restaurante = restaurantes[index];
+                final restauranteId = restaurante['id'] as int;
+                final esFavorito = favoritos.contains(restauranteId);
+
                 return Card(
                   margin: const EdgeInsets.all(10),
-                  elevation: 5, // Para darle un poco de sombra a las tarjetas
+                  elevation: 5,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(15),
+                    leading: IconButton(
+                      icon: Icon(
+                        esFavorito ? Icons.star : Icons.star_border,
+                        color: esFavorito ? Colors.yellow[700] : Colors.grey,
+                      ),
+                      onPressed: () => _toggleFavorito(restauranteId),
+                    ),
                     title: Text(
                       restaurante['nombre'],
                       style: const TextStyle(
